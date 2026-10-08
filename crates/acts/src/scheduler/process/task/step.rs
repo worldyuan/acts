@@ -60,7 +60,7 @@ impl ActTask for Step {
                 &Act {
                     name: self.name.clone(),
                     uses: uses.to_string(),
-                    params: task.params(),
+                    params: task.params()?,
                     options: self.options.clone(),
                     ..Default::default()
                 },

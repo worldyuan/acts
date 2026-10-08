@@ -264,7 +264,18 @@ impl Task {
             }
 
             // append act.params to inputs
-            inputs.set(consts::ACT_PARAMS_KEY, self.params());
+            //
+            // `create_message` returns a `Message`, so a params error cannot be propagated
+            // from here: surface it through the message's error fields instead of
+            // publishing partially filled params (see `Task::params`).
+            match self.params() {
+                Ok(params) => inputs.set(consts::ACT_PARAMS_KEY, params),
+                Err(err) => {
+                    let err: Error = err.into();
+                    inputs.set(consts::ACT_ERR_CODE, err.ecode);
+                    inputs.set(consts::ACT_ERR_MESSAGE, err.message);
+                }
+            }
         }
 
         // append act.optins to inputs
@@ -402,7 +413,12 @@ impl Task {
         self.node.content.options()
     }
 
-    pub fn params(self: &Arc<Self>) -> serde_json::Value {
+    /// The act's params, with every `${{ ... }}` expression evaluated.
+    ///
+    /// `Err` means at least one expression could not be evaluated. The caller **must** fail
+    /// the task: running it with partially filled params is what used to turn a bad
+    /// placeholder into a 600s request timeout (see `utils::fill_params`).
+    pub fn params(self: &Arc<Self>) -> Result<serde_json::Value> {
         let ctx = self.create_context();
         utils::fill_params(&self.node.content.params(), &ctx)
     }

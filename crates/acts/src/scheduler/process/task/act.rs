@@ -31,7 +31,7 @@ impl ActTask for Act {
         task.set_emit(true);
         let package = ctx.runtime.package_definition(&self.uses).await?;
         task.set_data_with(|data| data.set(consts::ACT_RUN_AS, package.run_as()));
-        package.validate(&task.params())?;
+        package.validate(&task.params()?)?;
         match package.run_as() {
             ActRunAs::Irq => {
                 // interrupt the state
@@ -44,7 +44,7 @@ impl ActTask for Act {
                     .runtime
                     .package()
                     .create(package.id(), ctx.runtime.config())?;
-                if let Some(vars) = package.execute(ctx, &ctx.task().params()).await? {
+                if let Some(vars) = package.execute(ctx, &ctx.task().params()?).await? {
                     task.update_data(&vars);
                 };
             }

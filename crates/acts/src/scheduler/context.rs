@@ -581,7 +581,9 @@ impl Context {
         inputs.set(consts::ACT_OPTIONS_KEY, msg.options.clone());
 
         // append act.params to inputs
-        let params = utils::fill_params(&msg.params, self);
+        // A malformed `${{ ... }}` must fail the node here rather than travel on as a
+        // half-filled payload (see `utils::fill_params`).
+        let params = utils::fill_params(&msg.params, self)?;
         inputs.set(consts::ACT_PARAMS_KEY, params);
 
         let task = self.task();
